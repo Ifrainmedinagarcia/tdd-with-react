@@ -1,7 +1,5 @@
-import {GithubSearchPage} from './github-search-page'
+import GitHubSearchPage from "./GitHubSearchPage";
 
-export {GithubSearchPage}
-
-export default {
-  GithubSearchPage,
+export {
+    GitHubSearchPage
 }
