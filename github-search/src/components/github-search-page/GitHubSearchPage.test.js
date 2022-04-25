@@ -1,8 +1,8 @@
 import React from "react";
 import { screen, fireEvent, render, waitFor, within } from "@testing-library/react";
-import GitHubSearchPage from "./GitHubSearchPage";
+import GitHubSearchPage from "./GitHubSearchPage"
 
-beforeEach(()=> render(<GitHubSearchPage/>))
+  beforeEach(()=> render(<GitHubSearchPage/>))
 
 describe('When the GitHubSearchPage is mounted', () => {
     test('Must display the title', () => {
@@ -59,7 +59,7 @@ describe('When the user does a search', () => {
 
         expect(within(Repository).getByRole("img", {name: /test/i})).toBeInTheDocument()
         expect(tableCells).toHaveLength(5)
-        expect(Repository).toHaveTextContent(/Test/i)
+        expect(Repository).toHaveTextContent(/test/i)
         expect(Stars).toHaveTextContent(/10/)
         expect(Forks).toHaveTextContent(/5/)
         expect(OpenIssue).toHaveTextContent(/2/)
