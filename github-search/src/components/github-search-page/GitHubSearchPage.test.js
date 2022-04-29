@@ -1,8 +1,41 @@
 import React from "react";
 import { screen, fireEvent, render, waitFor, within } from "@testing-library/react";
+import { rest } from 'msw'
+import { setupServer } from 'msw/node'
 import GitHubSearchPage from "./GitHubSearchPage"
 
-  beforeEach(()=> render(<GitHubSearchPage/>))
+
+const fakeRepo = {
+    "id": "33397954",
+    "name": "qt5reactor",
+    "owner":{"avatar_url": "https://avatars.githubusercontent.com/u/716546?v=4"},
+    "html_url": "https://github.com/twisted/qt5reactor",
+    "updated_at": "2022-04-11",
+    "stargazers_count": 43,
+    "forks_count": 18,
+    "open_issues_count": 18,
+}
+
+const server = setupServer(
+    rest.get('https://api.github.com/search/repositories', (req, res, ctx) => {
+      return res(
+          ctx.status(200),
+          ctx.json({
+            "total_count": 22747,
+            "incomplete_results": false,
+            "items": [fakeRepo]
+          })
+        )
+    }),
+)
+  
+beforeAll(() => server.listen())
+
+afterEach(() => server.resetHandlers())
+
+afterAll(() => server.close())
+ 
+beforeEach(()=> render(<GitHubSearchPage/>))
 
 describe('When the GitHubSearchPage is mounted', () => {
     test('Must display the title', () => {
@@ -27,6 +60,7 @@ describe('When the user does a search', () => {
         expect(btnSearch).toBeDisabled()
         await waitFor(()=> expect(btnSearch).toBeEnabled())
     });
+
     test('The data should be displayed as a sticke table', async () => {
         const btnSearch = screen.getByRole("button", {name: /search/i})
         const initialMessage = screen.queryByText(/Please provide a search option and click in the search button/i)
@@ -35,6 +69,7 @@ describe('When the user does a search', () => {
         await waitFor(()=> expect(initialMessage).not.toBeInTheDocument())
         expect(screen.getByRole("table")).toBeInTheDocument()
     });
+
     test('The header table should contain: Repository, stars, forks, open issues and updated at', async () => {
         const btnSearch = screen.getByRole("button", {name: /search/i})
         fireEvent.click(btnSearch)
@@ -49,6 +84,7 @@ describe('When the user does a search', () => {
         expect(OpenIssue).toHaveTextContent(/Open Issues/i)
         expect(updatedAt).toHaveTextContent(/Updated at/i)
     });
+
     test('Each table result must countain: name, stars, updated at, forks, open issues. It should have a link that opens in a new tab the github repository selected', async () => {
         const btnSearch = screen.getByRole("button", {name: /search/i})
         fireEvent.click(btnSearch)
@@ -56,15 +92,17 @@ describe('When the user does a search', () => {
         const withInTable = within(table)
         const tableCells = withInTable.getAllByRole("cell")
         const [Repository, Stars, Forks, OpenIssue, updatedAt] = tableCells
+        const avatarImg = within(Repository).getByRole("img", {name: fakeRepo.name})
 
-        expect(within(Repository).getByRole("img", {name: /test/i})).toBeInTheDocument()
+        expect(avatarImg).toBeInTheDocument()
         expect(tableCells).toHaveLength(5)
-        expect(Repository).toHaveTextContent(/test/i)
-        expect(Stars).toHaveTextContent(/10/)
-        expect(Forks).toHaveTextContent(/5/)
-        expect(OpenIssue).toHaveTextContent(/2/)
-        expect(updatedAt).toHaveTextContent(/2020-01-01/)
-        expect(withInTable.getByText(/test/i).closest("a")).toHaveAttribute("href", "https://localhost:3000/test")
+        expect(Repository).toHaveTextContent(fakeRepo.name)
+        expect(Stars).toHaveTextContent(fakeRepo.stargazers_count)
+        expect(Forks).toHaveTextContent(fakeRepo.forks_count)
+        expect(OpenIssue).toHaveTextContent(fakeRepo.open_issues_count)
+        expect(updatedAt).toHaveTextContent(fakeRepo.updated_at)
+        expect(withInTable.getByText(fakeRepo.name).closest("a")).toHaveAttribute("href", fakeRepo.html_url)
+        expect(avatarImg).toHaveAttribute("src", fakeRepo.owner.avatar_url)
     });
 
     test('Must display total results number of the search and the current number of results.', async () => {
@@ -104,7 +142,23 @@ describe('When the user does a search', () => {
 });
 
 describe('When the user does a search without results', () => {
-    test('Must show a empty state message', () => {
+    test('Must show a empty state message "You search has no result"', async () => {
+            server.use(
+                rest.get('https://api.github.com/search/repositories', (req, res, ctx) => {
+                    return res(
+                    ctx.status(200),
+                    ctx.json({
+                        "total_count": 0,
+                        "incomplete_results": false,
+                        "items": []
+                    })
+                  )
+              }),)
+
+        const btnSearch = screen.getByRole("button", {name: /search/i})
+        fireEvent.click(btnSearch)
         
+        await waitFor(()=> expect(screen.getByText(/You search has no results/i)).toBeInTheDocument())
+        expect(screen.queryByRole("table")).not.toBeInTheDocument()
     });
 });

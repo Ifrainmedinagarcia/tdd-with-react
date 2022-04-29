@@ -17,10 +17,10 @@ import {
 
   const tableHeaders = ["Repository", "Stars", "Forks", "Open Issues", "Updated at"]
 
-export const Content = ({isSearchApplied}) => {
-    return  (
-      isSearchApplied ? (
-          <Paper>
+export const Content = ({isSearchApplied , reposList}) => {
+    if (isSearchApplied && !!reposList.length) {
+      return(     
+        <Paper>
             <TableContainer>
             <Table>
                 <TableHead>
@@ -29,16 +29,29 @@ export const Content = ({isSearchApplied}) => {
                 </TableRow>
                 </TableHead>
                 <TableBody>
-                <TableRow>
-                    <TableCell>
-                    <Avatar alt='test' src='/logo192.png'/>
-                    <Link href='https://localhost:3000/test'>Test</Link>
-                    </TableCell>
-                    <TableCell>10</TableCell>
-                    <TableCell>5</TableCell>
-                    <TableCell>2</TableCell>
-                    <TableCell>2020-01-01</TableCell>
-                </TableRow>
+                  {reposList.map(
+                    ({
+                      name,
+                      id,
+                      stargazers_count: stargazersCount,
+                      forks_count: forksCount,
+                      open_issues_count: openIssuesCount,
+                      updated_at: updatedAt,
+                      html_url: htmlUrl,
+                      owner: {avatar_url: avatarUrl},
+                    }) => (
+                    <TableRow key={id}>
+                      <TableCell>
+                        <Avatar alt={name} src={avatarUrl} />
+                        <Link href={htmlUrl}>{name}</Link>
+                      </TableCell>
+                      <TableCell>{stargazersCount}</TableCell>
+                      <TableCell>{forksCount}</TableCell>
+                      <TableCell>{openIssuesCount}</TableCell>
+                      <TableCell>{updatedAt}</TableCell>
+                    </TableRow>
+                    ),
+                  )}
                 </TableBody>
             </Table>
             </TableContainer>
@@ -52,16 +65,24 @@ export const Content = ({isSearchApplied}) => {
                 onChangeRowsPerPage={()=>{}}
             />
           </Paper>
-      ) 
-      :(
-      <Box height={400} display="flex" alignItems="center" justifyContent="center">
-        <Typography>Please provide a search option and click in the search button</Typography>
-      </Box>
-      ))
+      )
+    }
+
+    if (isSearchApplied && !reposList.length) {
+      return(
+        <Box height={400} display="flex" alignItems="center" justifyContent="center">
+          <Typography>You search has no results</Typography>
+        </Box>
+      )
+    }
+    return (
+      <Typography>Please provide a search option and click in the search button</Typography>
+    )
   }
 
   Content.propTypes = {
-    isSearchApplied: PropTypes.bool.isRequired
+    isSearchApplied: PropTypes.bool.isRequired,
+    reposList: PropTypes.arrayOf.isRequired,
   }
 
   export default Content
