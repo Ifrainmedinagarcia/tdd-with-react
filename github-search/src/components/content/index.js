@@ -15,9 +15,19 @@ import {
   } from '@material-ui/core'
   import PropTypes from "prop-types"
 
-  const tableHeaders = ["Repository", "Stars", "Forks", "Open Issues", "Updated at"]
+const tableHeaders = ["Repository", "Stars", "Forks", "Open Issues", "Updated at"]
 
-export const Content = ({isSearchApplied , reposList}) => {
+
+export const Content = ({isSearchApplied , reposList, rowsPerPage, setRowsPerPage}) => {
+    const handleChangeRowsPerPage = ({target: { value }}) => {
+      setRowsPerPage(value)
+    }
+    const renderWithBox = (cb) => (
+      <Box height={400} display="flex" alignItems="center" justifyContent="center">
+        {cb}
+      </Box>
+    )
+
     if (isSearchApplied && !!reposList.length) {
       return(     
         <Paper>
@@ -55,34 +65,35 @@ export const Content = ({isSearchApplied , reposList}) => {
                 </TableBody>
             </Table>
             </TableContainer>
-            <TablePagination 
+            <TablePagination
                 rowsPerPageOptions={[30,50,100]}
                 component="div"
                 count={1}
-                rowsPerPage={30}
+                rowsPerPage={rowsPerPage}
                 page={0}
                 onChangePage={()=> {}}
-                onChangeRowsPerPage={()=>{}}
+                onChangeRowsPerPage={handleChangeRowsPerPage}
             />
           </Paper>
       )
     }
 
     if (isSearchApplied && !reposList.length) {
-      return(
-        <Box height={400} display="flex" alignItems="center" justifyContent="center">
-          <Typography>You search has no results</Typography>
-        </Box>
-      )
+      return renderWithBox(()=> (
+        <Typography>You search has no results</Typography>
+      ))
     }
-    return (
+
+    return renderWithBox(()=> (
       <Typography>Please provide a search option and click in the search button</Typography>
-    )
+    ))
   }
 
   Content.propTypes = {
     isSearchApplied: PropTypes.bool.isRequired,
     reposList: PropTypes.arrayOf.isRequired,
+    rowsPerPage: PropTypes.number.isRequired,
+    setRowsPerPage: PropTypes.func.isRequired
   }
 
   export default Content

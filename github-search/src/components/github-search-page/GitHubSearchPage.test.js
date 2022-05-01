@@ -3,28 +3,20 @@ import { screen, fireEvent, render, waitFor, within } from "@testing-library/rea
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
 import GitHubSearchPage from "./GitHubSearchPage"
+import { makeFakeRepo, makeFakeResponse, getReposList, getReposPerPage } from "../../__fixtures__/repos";
+import { OK_STATUS } from "../../consts";
 
+const fakeResponse = makeFakeResponse({totalCount:1})
 
-const fakeRepo = {
-    "id": "33397954",
-    "name": "qt5reactor",
-    "owner":{"avatar_url": "https://avatars.githubusercontent.com/u/716546?v=4"},
-    "html_url": "https://github.com/twisted/qt5reactor",
-    "updated_at": "2022-04-11",
-    "stargazers_count": 43,
-    "forks_count": 18,
-    "open_issues_count": 18,
-}
+const fakeRepo = makeFakeRepo()
+
+fakeResponse.items=[fakeRepo]
 
 const server = setupServer(
-    rest.get('https://api.github.com/search/repositories', (req, res, ctx) => {
+    rest.get('/search/repositories', (req, res, ctx) => {
       return res(
-          ctx.status(200),
-          ctx.json({
-            "total_count": 22747,
-            "incomplete_results": false,
-            "items": [fakeRepo]
-          })
+          ctx.status(OK_STATUS),
+          ctx.json(fakeResponse)
         )
     }),
 )
@@ -36,6 +28,11 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
  
 beforeEach(()=> render(<GitHubSearchPage/>))
+
+const fireClickSearch = () => {
+    const btnSearch = screen.getByRole("button", {name: /search/i})
+    fireEvent.click(btnSearch)
+}
 
 describe('When the GitHubSearchPage is mounted', () => {
     test('Must display the title', () => {
@@ -71,8 +68,7 @@ describe('When the user does a search', () => {
     });
 
     test('The header table should contain: Repository, stars, forks, open issues and updated at', async () => {
-        const btnSearch = screen.getByRole("button", {name: /search/i})
-        fireEvent.click(btnSearch)
+        fireClickSearch()
         const table = await screen.findByRole("table")
         const tableHeaders = within(table).getAllByRole("columnheader")
         const [Repository, Stars, Forks, OpenIssue, updatedAt] = tableHeaders
@@ -86,8 +82,7 @@ describe('When the user does a search', () => {
     });
 
     test('Each table result must countain: name, stars, updated at, forks, open issues. It should have a link that opens in a new tab the github repository selected', async () => {
-        const btnSearch = screen.getByRole("button", {name: /search/i})
-        fireEvent.click(btnSearch)
+        fireClickSearch()
         const table = await screen.findByRole("table")
         const withInTable = within(table)
         const tableCells = withInTable.getAllByRole("cell")
@@ -106,15 +101,13 @@ describe('When the user does a search', () => {
     });
 
     test('Must display total results number of the search and the current number of results.', async () => {
-        const btnSearch = screen.getByRole("button", {name: /search/i})
-        fireEvent.click(btnSearch)
+        fireClickSearch()
         await screen.findByRole("table")
         expect(screen.getByText(/1-1 of 1/i)).toBeInTheDocument()
     });
 
     test('A results size per page select/combobox with the options: 30, 50, 100. The default is 30.', async () => {
-        const btnSearch = screen.getByRole("button", {name: /search/i})
-        fireEvent.click(btnSearch)
+        fireClickSearch()
         await screen.findByRole("table")
 
         expect(screen.getByLabelText(/rows per page/i)).toBeInTheDocument()
@@ -129,8 +122,7 @@ describe('When the user does a search', () => {
     });
 
     test('Must exists the Next and previous pagination buttons', async () => {
-        const btnSearch = screen.getByRole("button", {name: /search/i})
-        fireEvent.click(btnSearch)
+        fireClickSearch()
         await screen.findByRole("table")
         const nextPageBtn = screen.getByRole("button", {name: /next page/i})
         const previousPageBtn = screen.getByRole("button", {name: /previous page/i})
@@ -144,21 +136,72 @@ describe('When the user does a search', () => {
 describe('When the user does a search without results', () => {
     test('Must show a empty state message "You search has no result"', async () => {
             server.use(
-                rest.get('https://api.github.com/search/repositories', (req, res, ctx) => {
+                rest.get('/search/repositories', (req, res, ctx) => {
                     return res(
-                    ctx.status(200),
-                    ctx.json({
-                        "total_count": 0,
-                        "incomplete_results": false,
-                        "items": []
-                    })
+                    ctx.status(OK_STATUS),
+                    ctx.json(makeFakeResponse())
                   )
-              }),)
+              }),
+            )
 
-        const btnSearch = screen.getByRole("button", {name: /search/i})
-        fireEvent.click(btnSearch)
-        
+        fireClickSearch()
         await waitFor(()=> expect(screen.getByText(/You search has no results/i)).toBeInTheDocument())
         expect(screen.queryByRole("table")).not.toBeInTheDocument()
+    });
+});
+
+describe('When the user types on filter by and does a search', () => {
+    test('Must display the related repos', async () => {
+        const internalFakeResponse = makeFakeResponse()
+        const REPO_NAME = "laravel"
+        const expectedRepo = getReposList({name: REPO_NAME})[0]
+        server.use(
+            rest.get('/search/repositories', (req, res, ctx) => {
+                return res(
+                    ctx.status(OK_STATUS),
+                    ctx.json({
+                        ...internalFakeResponse, items: getReposList({name: req.url.searchParams.get('q')})
+                    })
+                )
+            }),
+        )
+        fireEvent.change(screen.getByLabelText(/filter by/i), { target: { value: "laravel" } } )
+        fireClickSearch()
+        const table = await screen.findByRole('table')
+
+        expect(table).toBeInTheDocument()
+        const withInTable = within(table)
+        const tableCells = withInTable.getAllByRole("cell")
+        const [Repository] = tableCells
+
+        expect(tableCells).toHaveLength(5)
+        expect(Repository).toHaveTextContent(expectedRepo.name)
+    });
+});
+
+describe('When the user does a search and selectes 50 rows per page', () => {
+    test('Must fetch a new search and display 50 rows results on the table', async () => {
+        server.use(
+            rest.get('/search/repositories', (req, res, ctx) => {
+                return res(
+                    ctx.status(OK_STATUS),
+                    ctx.json({
+                        ...makeFakeResponse(), 
+                        items: getReposPerPage({
+                            perPage: Number(req.url.searchParams.get('per_page')), 
+                            currentPage: req.url.searchParams.get('page')
+                        })
+                    })
+                )
+            }),
+        )
+        fireClickSearch()
+        const table = await screen.findByRole('table')
+        expect(table).toBeInTheDocument()
+        expect(await screen.findAllByRole('row')).toHaveLength(31)
+
+        fireEvent.mouseDown(screen.getByLabelText(/rows per page/i))
+        fireEvent.click(screen.getByRole('option', {name: '50'}))
+        expect(await screen.findAllByRole('row')).toHaveLength(51)
     });
 });
