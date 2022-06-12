@@ -1,3 +1,4 @@
+
 import repos30Paginated from './repos-30-paginated.json'
 import repos50Paginated from './repos-50-paginated.json'
 
@@ -5,6 +6,8 @@ export const makeFakeResponse = ({totalCount = 0} = {}) => ({
     "total_count": totalCount,
     "items": []
 })
+
+export const makeFakeError = ({message = "Validation Failed"} = {}) => ({message})
 
 export const makeFakeRepo = ( {name = 'qt5reactor', id = '33397954'} = {} ) => ({
     id,

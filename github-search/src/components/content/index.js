@@ -6,9 +6,6 @@ import {
 import PropTypes from "prop-types"
 
 
-
-
-
 export const Content = ({isSearchApplied , reposList, children}) => {
    
     const renderWithBox = (cb) => (

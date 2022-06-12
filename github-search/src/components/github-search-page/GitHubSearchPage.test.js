@@ -3,9 +3,9 @@ import { screen, fireEvent, render, waitFor, within } from "@testing-library/rea
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
 import GitHubSearchPage from "./GitHubSearchPage"
-import { makeFakeRepo, makeFakeResponse, getReposList } from "../../__fixtures__/repos";
+import { makeFakeRepo, makeFakeResponse, getReposList, makeFakeError } from "../../__fixtures__/repos";
 import { handlePaginated } from "../../__fixtures__/handlers";
-import { OK_STATUS } from "../../consts";
+import { OK_STATUS, UNEXPECTED_STATUS, UNPROCESSABLE_STATUS } from "../../consts";
 
 const fakeResponse = makeFakeResponse({totalCount:1})
 
@@ -203,38 +203,43 @@ describe('When the user does a search and selectes 50 rows per page', () => {
     });
 });
 
-describe('When teh user clicks on search and then on next page button', () => {
-    test('Must display the next repositories page', async () => {
-           server.use(
-            rest.get('/search/repositories', handlePaginated),
-        )
-
-        fireClickSearch()    
-
-        const table = await screen.findByRole('table')
-        expect(table).toBeInTheDocument()
-
-        expect(screen.getByRole("cell", {name: /1-0/i})).toBeInTheDocument()
-
-        expect(screen.getByRole("button", {name: /next page/i})).toBeEnabled()
-
-        fireEvent.click(screen.getByRole("button", {name: /next page/i}))
-
-        expect(screen.getByRole("button", {name: /search/iu})).toBeDisabled()
-        await waitFor(()=> expect(screen.getByRole("button", {name: /search/i})).not.toBeDisabled(), {timeout: 3000})
-
-        expect(screen.getByRole("cell", {name: /2-0/i})).toBeInTheDocument()
-
-        // click previous page
-        fireEvent.click(screen.getByRole("button", {name: /previous page/i}))
-
+describe('When there is an Validation Failed from the backend', () => {
+    test('Must display an alert message error with the message from the service', async () => {
+        expect(screen.queryByText(/Validation Failed/i)).not.toBeInTheDocument()
         
-        // wait search finish
-        await waitFor(()=> expect(screen.getByRole("button", {name: /search/i})).not.toBeDisabled(), {timeout: 3000})
+        // config server return error
+        server.use(
+            rest.get('/search/repositories', (_req, res, ctx) => {
+                return res(
+                    ctx.status(UNPROCESSABLE_STATUS),
+                    ctx.json(makeFakeError())
+                )
+            }),
+        )
+  
+        fireClickSearch()
 
-        // expect
-        expect(screen.getByRole("cell", {name: /1-0/i})).toBeInTheDocument()
-
-
-    }, 10000);
+        expect(await screen.findByText(/Validation Failed/i)).toBeVisible()
+    });
 });
+
+describe('When there is an unexpected error from the backend', () => {
+    test('Must display an alert message error with the message from the service', async () => {
+        expect(screen.queryByText(/unexpected error/i)).not.toBeInTheDocument()
+        
+        // config server return error
+        server.use(
+            rest.get('/search/repositories', (_req, res, ctx) => {
+                return res(
+                    ctx.status(UNEXPECTED_STATUS),
+                    ctx.json(makeFakeError({message: "unexpected error"}))
+                )
+            }),
+        )
+   
+        fireClickSearch()
+
+        expect(await screen.findByText(/unexpected error/i)).toBeVisible()
+    });
+});
+
