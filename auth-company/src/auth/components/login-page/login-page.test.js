@@ -216,6 +216,8 @@ describe('When the user submit the login form with valid data and there is an in
         
         server.use(handlerInvalidCredentials({wrongEmail, wrongPassword}))
 
+        expect(screen.queryByText(/The email or password are not correct/i)).not.toBeInTheDocument()
+
         const inputPassword = screen.getByLabelText(/password/i)
         const inputEmail = screen.getByLabelText(/email/i)
         
