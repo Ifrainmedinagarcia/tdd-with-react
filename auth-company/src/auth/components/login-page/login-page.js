@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, CircularProgress, TextField } from "@material-ui/core";
+import { Button, CircularProgress, Snackbar, TextField } from "@material-ui/core";
 import { login } from "../../services";
 
 
@@ -24,6 +24,8 @@ export const LoginPage = () => {
         password: ""
     })
     const [isFetching, setIsFetching] = useState(false)
+    const [isOpen, setIsOpen] = useState(false)
+    const [errorMessage, setErrorMessage] = useState("")
 
     const validateForm = ()=> {
         const {email, password} = formValues
@@ -45,9 +47,20 @@ export const LoginPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (validateForm()) return
-        setIsFetching(true)
-        await login()
-        setIsFetching(false)
+        const {email, password} = formValues
+        try {
+            setIsFetching(true)
+            const response = await login({email, password})
+            if (!response.ok) {
+                throw response
+            }
+        } catch (error) {
+            const data = await error.json()
+            setErrorMessage(data.message)
+            setIsOpen(true)
+        } finally{
+            setIsFetching(false)
+        }
     }
  
     const handleChange = ({target: {value, name}}) => setFormValues({...formValues, [name]: value})
@@ -67,6 +80,8 @@ export const LoginPage = () => {
         }
         setPasswordValidationMessage("")
     }
+
+    const handleClose = () => setIsOpen(false)
     
     return (
         <>
@@ -85,8 +100,8 @@ export const LoginPage = () => {
                 />
                 <TextField
                     onBlur={handleBlurPassword}
-                    label="password" 
-                    id="password" 
+                    label="password"
+                    id="password"
                     type="password"
                     name="password"
                     onChange={handleChange}
@@ -95,6 +110,16 @@ export const LoginPage = () => {
                 />
                 <Button disabled={isFetching} type="submit">send</Button>
             </form>
+            <Snackbar 
+                anchorOrigin={{
+                    vertical: "top",
+                    horizontal: "center",
+                }}
+                open={isOpen}
+                autoHideDuration={6000}
+                onClose={handleClose}
+                message={errorMessage}
+            />
         </>
     )
 }

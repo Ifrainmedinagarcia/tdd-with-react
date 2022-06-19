@@ -1,11 +1,15 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor, waitForElementToBeRemoved } from "@testing-library/react";
 import {setupServer} from "msw/node"
+import { rest } from "msw";
 import { LoginPage } from "./login-page";
-import { handlers } from "../../../mocks/handlers";
+import { handlers, handlerInvalidCredentials } from "../../../mocks/handlers";
+import { HTTP_UNEXPECTED_ERROR_STATUS } from "../../../consts";
+
 
 
 const server = setupServer(...handlers)
+
 
 beforeAll(() => server.listen())
 
@@ -185,14 +189,40 @@ describe('When teh user submit the login form with valid date', () => {
 });
 
 describe('When the user submit the login form with valid data and is an unexpected server error', () => {
-    test('Must display the error message "Unexpected erro, please try again from teh api', () => {
+    test('Must display the error message "Unexpected error, please try again" from the api', async () => {
+        server.use(rest.post('/login', (_req, res, ctx) => 
+            res(ctx.status(HTTP_UNEXPECTED_ERROR_STATUS), ctx.json({message: "Unexpected error, please try again"}))))
         
+        expect(screen.queryByText(/Unexpected error, please try again/i)).not.toBeInTheDocument()
+        
+        const validPassword = "aA1#sdfs"
+        const inputPassword = screen.getByLabelText(/password/i)
+        const inputEmail = screen.getByLabelText(/email/i)
+        
+        fireEvent.change(inputEmail, {target: {value: "medina.ifrain@gmail.com"}})
+        fireEvent.change(inputPassword, {target: {value: validPassword}})
+        submitButton()
+
+        expect(await screen.findByText(/Unexpected error, please try again/i)).toBeInTheDocument()
+    
     });
     
 });
 
 describe('When the user submit the login form with valid data and there is an invalid credentials error', () => {
-    test('Must display the error message "The email or password are not correct" from the api', () => {
+    test('Must display the error message "The email or password are not correct" from the api', async () => {
+        const wrongEmail = "wrong@mail.com"
+        const wrongPassword = "Aa12345678#"
         
+        server.use(handlerInvalidCredentials({wrongEmail, wrongPassword}))
+
+        const inputPassword = screen.getByLabelText(/password/i)
+        const inputEmail = screen.getByLabelText(/email/i)
+        
+        fireEvent.change(inputEmail, {target: {value: wrongEmail}})
+        fireEvent.change(inputPassword, {target: {value: wrongPassword}})
+        submitButton()
+
+        expect(await screen.findByText(/The email or password are not correct/i)).toBeInTheDocument()
     });
 });
