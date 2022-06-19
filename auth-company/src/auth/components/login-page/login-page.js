@@ -1,54 +1,77 @@
 import React, { useState } from "react";
-import { Button, TextField } from "@material-ui/core";
+import { Button, CircularProgress, TextField } from "@material-ui/core";
+import { login } from "../../services";
 
+
+const passwordValidationMsg = "The password must contain at least 8 characters, one upper case letter, one number and one special character"
 
 const validateEmail = (email) => {
     const regex = /^([A-Za-z0-9_\-.])+@([A-Za-z0-9_\-.])+\.([A-Za-z]{2,4})$/
     return regex.test(email)
 }
-const passwordValidationMsg = "The password must contain at least 8 characters, one upper case letter, one number and one special character"
+
+const validatePassword = (pass) => {
+    const passwordRulesRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/
+
+    return passwordRulesRegex.test(pass)
+}
 
 export const LoginPage = () => {
-    const [emailValidationMessage, setEmailVAlidationMessage] = useState("")
-    const [passwordValidationMessage, setPasswordVAlidationMessage] = useState("")
+    const [emailValidationMessage, setEmailValidationMessage] = useState("")
+    const [passwordValidationMessage, setPasswordValidationMessage] = useState("")
     const [formValues, setFormValues] = useState({
         email: "",
         password: ""
     })
-    
-    const handleSubmit = (e) => {
-        e.preventDefault()
-        const {email, password} = e.target.elements
+    const [isFetching, setIsFetching] = useState(false)
 
-        if (!email.value) {
-            setEmailVAlidationMessage("The email is required")
+    const validateForm = ()=> {
+        const {email, password} = formValues
+
+        const isEmailEmpty = !email
+        const isPasswordEmpty = !password
+
+        if (isEmailEmpty) {
+            setEmailValidationMessage("The email is required")
         }
-        if (!password.value) {
-            setPasswordVAlidationMessage("The password is required")
+        if (isPasswordEmpty) {
+            setPasswordValidationMessage("The password is required")
         }
+
+        return isEmailEmpty || isPasswordEmpty
+
     }
-
-    const handleChange = ({target: {value, name}}) =>setFormValues({...formValues, [name]: value})
     
-    const handleBlurEmail = ()=> {
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        if (validateForm()) return
+        setIsFetching(true)
+        await login()
+        setIsFetching(false)
+    }
+ 
+    const handleChange = ({target: {value, name}}) => setFormValues({...formValues, [name]: value})
+    
+    const handleBlurEmail = () => {
         if (!validateEmail(formValues.email)) {
-            setEmailVAlidationMessage("The email is invalid. Example: jhon.doe@gmail.com")
+            setEmailValidationMessage("The email is invalid. Example: jhon.doe@gmail.com")
             return
         }
-        setEmailVAlidationMessage("")
-    }
-
+        setEmailValidationMessage("")
+    } 
+ 
     const handleBlurPassword = () => {
-        const passwordRulesRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/
-
-        if (!passwordRulesRegex.test(formValues.password)) {
-            setPasswordVAlidationMessage(passwordValidationMsg)
+        if (!validatePassword(formValues.password)) {
+            setPasswordValidationMessage(passwordValidationMsg)
+            return
         }
+        setPasswordValidationMessage("")
     }
-
+    
     return (
         <>
             <h1>login page</h1>
+            {isFetching &&  <CircularProgress data-testid="loading-indicator"/>}
             <form onSubmit={handleSubmit}>
                 <TextField
                     onBlur={handleBlurEmail}
@@ -70,11 +93,9 @@ export const LoginPage = () => {
                     helperText={passwordValidationMessage}
                     value={formValues.password}
                 />
-                <Button type="submit">send</Button>
+                <Button disabled={isFetching} type="submit">send</Button>
             </form>
         </>
     )
 }
-
-
 export default { LoginPage }

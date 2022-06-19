@@ -1,8 +1,17 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, waitForElementToBeRemoved } from "@testing-library/react";
+import {setupServer} from "msw/node"
 import { LoginPage } from "./login-page";
+import { handlers } from "../../../mocks/handlers";
 
-const passwordValidationMessage = /The password must contain at least 8 characters, one upper case letter, one number and one special character/i
+
+const server = setupServer(...handlers)
+
+beforeAll(() => server.listen())
+
+afterEach(() => server.resetHandlers())
+
+afterAll(() => server.close())
 
 beforeEach(()=> render(<LoginPage />))
 
@@ -10,6 +19,7 @@ const submitButton = () => {
     const buttonSubmit = screen.getByRole("button", {name: /send/i})
     fireEvent.click(buttonSubmit)
 }
+const passwordValidationMessage = /The password must contain at least 8 characters, one upper case letter, one number and one special character/i
 
 describe('When login page is mounted', () => {
     test('must display the login title ', () => {
@@ -28,11 +38,13 @@ describe('When login page is mounted', () => {
 });
 
 describe('Whe the user leaves empty fields and clicks the submit button', () => {
-   test('should display required messages as the format: "The [field name] is required"', () => {
+   test('should display required messages as the format: "The [field name] is required"', async () => {
         expect(screen.queryByText(/The email is required/i)).not.toBeInTheDocument()
         expect(screen.queryByText(/The password is required/i)).not.toBeInTheDocument()
         
         submitButton()
+
+        await waitFor(()=> expect(screen.getByRole("button", {name: /send/i})).not.toBeDisabled())
 
         expect(screen.getByText(/The email is required/i)).toBeInTheDocument()
         expect(screen.getByText(/The password is required/i)).toBeInTheDocument()
@@ -40,7 +52,7 @@ describe('Whe the user leaves empty fields and clicks the submit button', () => 
 });
 
 describe('Whe the user fills the fields and clicks the submit button', () => {
-    test('should not display required messages', () => {
+    test('should not display required messages', async () => {
         const inputPassword = screen.getByLabelText(/password/i)
         const inputEmail = screen.getByLabelText(/email/i)
         
@@ -48,6 +60,8 @@ describe('Whe the user fills the fields and clicks the submit button', () => {
         fireEvent.change(inputPassword, {target: {value: "123456"}})
         
         submitButton()
+
+        await waitFor(()=> expect(screen.getByRole("button", {name: /send/i})).not.toBeDisabled())
 
         expect(screen.queryByText(/The email is required/i)).not.toBeInTheDocument()
         expect(screen.queryByText(/The password is required/i)).not.toBeInTheDocument()
@@ -116,5 +130,69 @@ describe('when the user fills and blur the password input with a value without o
         fireEvent.blur(inputPassword)
 
         expect(screen.getByText(passwordValidationMessage)).toBeInTheDocument()
+    });
+});
+
+describe('When the user fills and blur the password input a invalid value and then change with valid value and bllur again', () => {
+  test('Must not display the validation message', () => {
+    const passwordWithOutCharacterSpecialValue = "szafadgA8"
+    const validPassword = "aA1#sdfs"
+    const inputPassword = screen.getByLabelText(/password/i)
+    fireEvent.change(inputPassword, {target: {value: passwordWithOutCharacterSpecialValue}})
+
+    fireEvent.blur(inputPassword)
+
+    expect(screen.getByText(passwordValidationMessage)).toBeInTheDocument()
+
+    fireEvent.change(inputPassword, {target: {value: validPassword}})
+
+    fireEvent.blur(inputPassword)
+
+    expect(screen.queryByText(passwordValidationMessage)).not.toBeInTheDocument()
+
+  });
+})
+
+describe('When teh user submit the login form with valid date', () => {
+    test('Must disable the submit buttom while the form page is fetching the data', async () => {
+        const validPassword = "aA1#sdfs"
+        const inputPassword = screen.getByLabelText(/password/i)
+        const inputEmail = screen.getByLabelText(/email/i)
+        
+        fireEvent.change(inputEmail, {target: {value: "medina.ifrain@gmail.com"}})
+        fireEvent.change(inputPassword, {target: {value: validPassword}})
+        submitButton()
+        expect(screen.getByRole("button", {name: /send/i})).toBeDisabled()
+
+        await waitFor(()=> expect(screen.getByRole("button", {name: /send/i})).not.toBeDisabled())
+
+    });
+    test('Must be a loading indicator at the top of the form while it is fetching', async () => {
+        expect(screen.queryByTestId("loading-indicator")).not.toBeInTheDocument()
+        const validPassword = "aA1#sdfs"
+        const inputPassword = screen.getByLabelText(/password/i)
+        const inputEmail = screen.getByLabelText(/email/i)
+        
+        fireEvent.change(inputEmail, {target: {value: "medina.ifrain@gmail.com"}})
+        fireEvent.change(inputPassword, {target: {value: validPassword}})
+        
+        submitButton()
+
+        expect(screen.getByTestId("loading-indicator")).toBeInTheDocument()
+
+        await waitForElementToBeRemoved(()=> screen.queryByTestId("loading-indicator"))
+    });
+});
+
+describe('When the user submit the login form with valid data and is an unexpected server error', () => {
+    test('Must display the error message "Unexpected erro, please try again from teh api', () => {
+        
+    });
+    
+});
+
+describe('When the user submit the login form with valid data and there is an invalid credentials error', () => {
+    test('Must display the error message "The email or password are not correct" from the api', () => {
+        
     });
 });
