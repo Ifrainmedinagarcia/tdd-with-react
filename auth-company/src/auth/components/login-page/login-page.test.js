@@ -1,10 +1,11 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor, waitForElementToBeRemoved } from "@testing-library/react";
+import { screen, fireEvent, waitFor, waitForElementToBeRemoved } from "@testing-library/react";
 import {setupServer} from "msw/node"
 import { rest } from "msw";
 import { LoginPage } from "./login-page";
 import { handlers, handlerInvalidCredentials } from "../../../mocks/handlers";
 import { HTTP_UNEXPECTED_ERROR_STATUS } from "../../../consts";
+import { renderWithRouter } from "../../../utils/tests";
 
 
 
@@ -17,7 +18,8 @@ afterEach(() => server.resetHandlers())
 
 afterAll(() => server.close())
 
-beforeEach(()=> render(<LoginPage />))
+beforeEach(()=> renderWithRouter(<LoginPage/>))
+
 
 const submitButton = () => {
     const buttonSubmit = screen.getByRole("button", {name: /send/i})

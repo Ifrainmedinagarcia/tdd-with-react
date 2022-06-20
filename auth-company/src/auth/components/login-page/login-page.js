@@ -10,7 +10,9 @@ import {
     TextField, 
     Typography 
 } from "@material-ui/core";
+import { Redirect } from "react-router-dom";
 import { login } from "../../services";
+import { ADMIN_ROLE } from "../../../consts";
 
 const passwordValidationMsg = `The password must contain at least 8 characters, 
 one upper case letter, one number and one special character`
@@ -56,6 +58,7 @@ export const LoginPage = () => {
     const [isFetching, setIsFetching] = useState(false)
     const [isOpen, setIsOpen] = useState(false)
     const [errorMessage, setErrorMessage] = useState("")
+    const [user, setUser] = useState({role: ""})
 
     const validateForm = ()=> {
         const {email, password} = formValues
@@ -84,6 +87,8 @@ export const LoginPage = () => {
             if (!response.ok) {
                 throw response
             }
+            const {user: { role }} = await response.json()
+            setUser({role})
         } catch (error) {
             const data = await error.json()
             setErrorMessage(data.message)
@@ -92,7 +97,7 @@ export const LoginPage = () => {
             setIsFetching(false)
         }
     }
- 
+
     const handleChange = ({target: {value, name}}) => setFormValues({...formValues, [name]: value})
     
     const handleBlurEmail = () => {
@@ -112,6 +117,10 @@ export const LoginPage = () => {
     }
 
     const handleClose = () => setIsOpen(false)
+
+    if (!isFetching && user.role === ADMIN_ROLE) {
+        return <Redirect to="/admin"/>
+    }
     
     return (
         <Container component="main" maxWidth="xs">
