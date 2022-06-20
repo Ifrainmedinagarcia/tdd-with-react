@@ -5,7 +5,9 @@ import { rest } from "msw";
 import { LoginPage } from "./login-page";
 import { handlers, handlerInvalidCredentials } from "../../../mocks/handlers";
 import { HTTP_UNEXPECTED_ERROR_STATUS } from "../../../consts";
-import { renderWithRouter } from "../../../utils/tests";
+import { renderWithRouter , submitButton } from "../../../utils/tests";
+import { AuthContext } from "../../../utils/contexts/auth-context";
+
 
 
 
@@ -18,13 +20,13 @@ afterEach(() => server.resetHandlers())
 
 afterAll(() => server.close())
 
-beforeEach(()=> renderWithRouter(<LoginPage/>))
+beforeEach(()=> renderWithRouter(
+    <AuthContext.Provider value={{handleSuccessLogin: jest.fn()}}>
+        <LoginPage/>
+    </AuthContext.Provider>
+))
 
 
-const submitButton = () => {
-    const buttonSubmit = screen.getByRole("button", {name: /send/i})
-    fireEvent.click(buttonSubmit)
-}
 const passwordValidationMessage = /The password must contain at least 8 characters, one upper case letter, one number and one special character/i
 
 describe('When login page is mounted', () => {

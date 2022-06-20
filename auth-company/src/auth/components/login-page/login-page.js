@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { 
     Avatar, 
     Button, 
@@ -13,6 +13,7 @@ import {
 import { Redirect } from "react-router-dom";
 import { login } from "../../services";
 import { ADMIN_ROLE } from "../../../consts";
+import { AuthContext } from "../../../utils/contexts/auth-context";
 
 const passwordValidationMsg = `The password must contain at least 8 characters, 
 one upper case letter, one number and one special character`
@@ -49,6 +50,7 @@ const useStyles = makeStyles(theme => ({
 
 export const LoginPage = () => {
     const clasess = useStyles()
+    const {handleSuccessLogin} = useContext(AuthContext)
     const [emailValidationMessage, setEmailValidationMessage] = useState("")
     const [passwordValidationMessage, setPasswordValidationMessage] = useState("")
     const [formValues, setFormValues] = useState({
@@ -89,6 +91,7 @@ export const LoginPage = () => {
             }
             const {user: { role }} = await response.json()
             setUser({role})
+            handleSuccessLogin()
         } catch (error) {
             const data = await error.json()
             setErrorMessage(data.message)
@@ -183,4 +186,5 @@ export const LoginPage = () => {
         </Container>
     )
 }
+
 export default { LoginPage }
