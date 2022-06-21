@@ -1,17 +1,17 @@
 import React from "react";
 import { BrowserRouter as Router } from "react-router-dom";
-import { render , fireEvent, screen } from "@testing-library/react";
+import { render, fireEvent, screen } from "@testing-library/react";
 import { AuthGuard } from "./components/auth-guard";
 
 
-export const renderWithRouter = (ui, {route = "/"}= {}) => {
+export const renderWithRouter = (ui, { route = "/" } = {}) => {
     window.history.pushState({}, "", route)
-    return render(ui, {wrapper: Router})
+    return render(ui, { wrapper: Router })
 }
 
-export const renderWithAuthProvider = (ui, {isAuth = false}= {}) => render(<AuthGuard isAuth={isAuth}>{ui}</AuthGuard>, {wrapper: Router})
+export const renderWithAuthProvider = (ui, { isAuth = false, role = "" } = {}) => render(<AuthGuard isAuth={isAuth} initialRole={role}>{ui}</AuthGuard>, { wrapper: Router })
 
-export const goTo = (route) =>  window.history.pushState({}, "", route)
+export const goTo = (route) => window.history.pushState({}, "", route)
 
 
 export const fillInputs = ({
@@ -31,4 +31,4 @@ export const submitButton = () => {
     fireEvent.click(buttonSubmit)
 }
 
-export default {renderWithRouter, renderWithAuthProvider, goTo, fillInputs, submitButton}
+export default { renderWithRouter, renderWithAuthProvider, goTo, fillInputs, submitButton }

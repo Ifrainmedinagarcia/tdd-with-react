@@ -4,7 +4,7 @@ import { setupServer } from "msw/node"
 import { handlers } from "./mocks/handlers";
 import { AppRouter } from "./app-router";
 import { renderWithAuthProvider, goTo, fillInputs, submitButton } from "./utils/tests"
-import { ADMIN_EMAIL, EMPLOYEE_EMAIL } from "./consts";
+import { ADMIN_EMAIL, ADMIN_ROLE, EMPLOYEE_EMAIL, EMPLOYEE_ROLE } from "./consts";
 
 
 const server = setupServer(...handlers)
@@ -34,15 +34,6 @@ describe('When the user is not aouthenticated and enters on employee page', () =
     });
 });
 
-describe('When the user is authenticated and enters on admin page', () => {
-    test("Must be redirected to login page", () => {
-        goTo("/admin")
-        renderWithAuthProvider(<AppRouter />, { isAuth: true })
-
-        expect(screen.getByText(/admin page/i)).toBeInTheDocument()
-    })
-});
-
 describe('When the admin is authenticated in login page', () => {
     test('Must be redirected to admin page', async () => {
         renderWithAuthProvider(<AppRouter />)
@@ -58,7 +49,7 @@ describe('When the admin goes to employee page', () => {
     test('Must have access', async () => {
         goTo("/admin")
 
-        renderWithAuthProvider(<AppRouter />, { isAuth: true })
+        renderWithAuthProvider(<AppRouter />, { isAuth: true, role: ADMIN_ROLE })
 
         fireEvent.click(screen.getByText(/Employees/i))
 
@@ -71,10 +62,19 @@ describe('When the employee is authenticated in login page', () => {
 
         renderWithAuthProvider(<AppRouter />)
         fillInputs({ email: EMPLOYEE_EMAIL })
-        
+
         submitButton()
 
         expect(await screen.findByText(/Employee page/i)).toBeInTheDocument()
     });
-    
+});
+
+describe('When the employee goes to admin page', () => {
+    test('Must redirect to employee page', async () => {
+        goTo("/admin")
+
+        renderWithAuthProvider(<AppRouter />, { isAuth: true, role: EMPLOYEE_ROLE})
+
+        expect(await screen.findByText(/Employee Page/i)).toBeInTheDocument()
+    });
 });
