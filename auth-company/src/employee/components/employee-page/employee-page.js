@@ -8,7 +8,11 @@ export const EmployeePage = () => {
 
     return (
         <>
-            <Typography component="h1" variant="h5">Employee Page</Typography>
+            <Typography 
+                component="h1" 
+                variant="h5">
+                    Employee Page
+            </Typography>
             {user.role === ADMIN_ROLE && <Button type="button">delete</Button>}
         </>
     )

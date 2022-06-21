@@ -1,5 +1,5 @@
 import { rest } from "msw";
-import { ADMIN_ROLE, HTTP_INVALID_CREDENTIALS_STATUS, HTTP_OK_STATUS } from "../consts";
+import { ADMIN_EMAIL, ADMIN_ROLE, EMPLOYEE_EMAIL, EMPLOYEE_ROLE, HTTP_INVALID_CREDENTIALS_STATUS, HTTP_OK_STATUS } from "../consts";
 
 export const handlers = [
     rest.post('/login', (req, res, ctx) => {
@@ -7,8 +7,11 @@ export const handlers = [
         let role = ""
         const {email} = req.body
 
-        if (email === "admin@mail.com") {
+        if (email === ADMIN_EMAIL) {
             role = ADMIN_ROLE
+        }
+        if (email === EMPLOYEE_EMAIL) {
+            role = EMPLOYEE_ROLE
         }
         return res(
             ctx.status(200),

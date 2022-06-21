@@ -4,6 +4,7 @@ import { setupServer } from "msw/node"
 import { handlers } from "./mocks/handlers";
 import { AppRouter } from "./app-router";
 import { renderWithAuthProvider, goTo, fillInputs, submitButton } from "./utils/tests"
+import { ADMIN_EMAIL, EMPLOYEE_EMAIL } from "./consts";
 
 
 const server = setupServer(...handlers)
@@ -45,7 +46,7 @@ describe('When the user is authenticated and enters on admin page', () => {
 describe('When the admin is authenticated in login page', () => {
     test('Must be redirected to admin page', async () => {
         renderWithAuthProvider(<AppRouter />)
-        fillInputs({ email: "admin@mail.com" })
+        fillInputs({ email: ADMIN_EMAIL })
         submitButton()
 
         expect(await screen.findByText(/Admin Page/i)).toBeInTheDocument()
@@ -63,4 +64,17 @@ describe('When the admin goes to employee page', () => {
 
         expect(await screen.findByText(/Employee Page/i)).toBeInTheDocument()
     });
+});
+
+describe('When the employee is authenticated in login page', () => {
+    test('Must be redirected to employee page', async () => {
+
+        renderWithAuthProvider(<AppRouter />)
+        fillInputs({ email: EMPLOYEE_EMAIL })
+        
+        submitButton()
+
+        expect(await screen.findByText(/Employee page/i)).toBeInTheDocument()
+    });
+    
 });
