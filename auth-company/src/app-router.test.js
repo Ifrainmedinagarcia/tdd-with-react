@@ -73,7 +73,7 @@ describe('When the employee goes to admin page', () => {
     test('Must redirect to employee page', async () => {
         goTo("/admin")
 
-        renderWithAuthProvider(<AppRouter />, { isAuth: true, role: EMPLOYEE_ROLE})
+        renderWithAuthProvider(<AppRouter />, { isAuth: true, role: EMPLOYEE_ROLE })
 
         expect(await screen.findByText(/Employee Page/i)).toBeInTheDocument()
     });
