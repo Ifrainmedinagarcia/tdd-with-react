@@ -12,7 +12,7 @@ export const handlers = [
         }
         return res(
             ctx.status(200),
-            ctx.json({user: {role}})
+            ctx.json({user: {role, username: "jhon doe"}})
         )
     }),
 ]

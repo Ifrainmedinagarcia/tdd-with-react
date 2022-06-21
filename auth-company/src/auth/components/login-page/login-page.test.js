@@ -21,7 +21,7 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 beforeEach(()=> renderWithRouter(
-    <AuthContext.Provider value={{handleSuccessLogin: jest.fn()}}>
+    <AuthContext.Provider value={{handleSuccessLogin: jest.fn(), user:{role:""}}}>
         <LoginPage/>
     </AuthContext.Provider>
 ))

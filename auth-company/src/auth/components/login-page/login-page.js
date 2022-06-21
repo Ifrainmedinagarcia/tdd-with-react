@@ -50,7 +50,7 @@ const useStyles = makeStyles(theme => ({
 
 export const LoginPage = () => {
     const clasess = useStyles()
-    const {handleSuccessLogin} = useContext(AuthContext)
+    const {handleSuccessLogin, user} = useContext(AuthContext)
     const [emailValidationMessage, setEmailValidationMessage] = useState("")
     const [passwordValidationMessage, setPasswordValidationMessage] = useState("")
     const [formValues, setFormValues] = useState({
@@ -60,7 +60,7 @@ export const LoginPage = () => {
     const [isFetching, setIsFetching] = useState(false)
     const [isOpen, setIsOpen] = useState(false)
     const [errorMessage, setErrorMessage] = useState("")
-    const [user, setUser] = useState({role: ""})
+
 
     const validateForm = ()=> {
         const {email, password} = formValues
@@ -89,9 +89,8 @@ export const LoginPage = () => {
             if (!response.ok) {
                 throw response
             }
-            const {user: { role }} = await response.json()
-            setUser({role})
-            handleSuccessLogin()
+            const {user: { role, username }} = await response.json()
+            handleSuccessLogin({role, username})
         } catch (error) {
             const data = await error.json()
             setErrorMessage(data.message)

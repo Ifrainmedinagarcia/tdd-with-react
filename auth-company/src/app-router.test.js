@@ -1,7 +1,6 @@
 import React from "react";
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { setupServer } from "msw/node"
-import { rest } from "msw";
 import { handlers } from "./mocks/handlers";
 import { AppRouter } from "./app-router";
 import { renderWithAuthProvider, goTo, fillInputs, submitButton } from "./utils/tests"
@@ -50,5 +49,18 @@ describe('When the admin is authenticated in login page', () => {
         submitButton()
 
         expect(await screen.findByText(/Admin Page/i)).toBeInTheDocument()
+        expect(await screen.findByText(/Jhon Doe/i)).toBeInTheDocument()
+    });
+});
+
+describe('When the admin goes to employee page', () => {
+    test('Must have access', async () => {
+        goTo("/admin")
+
+        renderWithAuthProvider(<AppRouter />, { isAuth: true })
+
+        fireEvent.click(screen.getByText(/Employees/i))
+
+        expect(await screen.findByText(/Employee Page/i)).toBeInTheDocument()
     });
 });
